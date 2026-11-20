@@ -1,0 +1,150 @@
+﻿@page "/Create"
+@using TesteProgram.Models
+@using static System.Net.WebRequestMethods
+@using Microsoft.EntityFrameworkCore
+@using System.Net.Http.Json
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@using TesteProgram.Models
+@using static System.Net.WebRequestMethods
+@inject IDbContextFactory<BlazorFinalProject.Data.BlazorFinalProjectContext> DbFactory
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+
+
+@code {
+    private Recipe recipe { get; set; }
+    private Portion Portion { get; set; }
+    private List<Ingredient>? ingredients = new List<Ingredient>();
+    private bool IsLoading = true;
+
+
+    protected override void OnInitialized()
+    {
+        recipe = new Recipe();
+
+        Portion = new Portion();
+        recipe.Portions = new List<Portion>();       
+
+    }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsLoading = true;        
+        ingredients = await Http.GetFromJsonAsync<List<Ingredient>>("http://localhost:5129/api/Ingredients");
+        IsLoading = false;
+    }
+
+
+    private void AddPortion()
+    {
+
+        recipe.Portions.Add(Portion);
+        Portion = new Portion();
+    }
+
+    private void IngredientChange(ChangeEventArgs e)
+    {
+        Portion.IngredientId = Convert.ToInt32(e.Value);
+    }
+
+    private void RemovePortion(Portion portion)
+    {
+        recipe.Portions?.Remove(portion);
+    }
+
+    private async void CreateRecipe(Recipe recipe)
+    {
+        var response = await Http.PostAsJsonAsync<Recipe> ("http://localhost:5129/api/Recipes", recipe);
+        NavigationManager.NavigateTo("recipes");
+    }
+
+}
+<h1 class="text-center">Create Recipe</h1>
+
+<form>
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Recipe Details</h5>
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name:</label>
+                    <input type="text" id="name" @bind="recipe.Name" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="time" class="form-label">Time:</label>
+                    <input type="number" id="time" @bind="recipe.Time" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="difficulty" class="form-label">Difficulty:</label>
+                    <input type="text" id="difficulty" @bind="recipe.Difficulty" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <textarea id="description" @bind="recipe.Description" class="form-control"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="category" class="form-label">Category:</label>
+                    <input type="text" id="category" @bind="recipe.Category" class="form-control" />
+                </div>
+
+                <h2 class="mt-4">Ingredients:</h2>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Ingredient</th>
+                            <th>Unit</th>
+                            <th>Quantity</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if(IsLoading)
+                        {
+                            <tr><td colspan="4"><div class="spinner-border" role="status"></div></td></tr>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td>
+                                    <select @onchange="IngredientChange" class="form-select">
+                                        @foreach (var ingredient in ingredients)
+                                        {
+                                            <option value="@ingredient.Id">@ingredient.Name</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td><input type="text" @bind="Portion.Unit" class="form-control" placeholder="Unit" /></td>
+                                <td><input type="number" @bind="Portion.Quantity" class="form-control" placeholder="Quantity" /></td>
+                                <td>
+                                    <button type="button" @onclick="() => RemovePortion(Portion)" class="btn btn-danger">Remove</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <button type="button" @onclick="AddPortion" class="btn btn-secondary">Add Ingredient</button>
+
+                <div class="mt-4 text-center">
+                    <button type="button" @onclick="() => CreateRecipe(recipe)" class="btn btn-primary">Create Recipe</button>
+                   
+                        <NavLink class="btn btn-primary" href="recipes" Match="NavLinkMatch.All">
+                            <span class="bi bi-house-door-fill" aria-hidden="true"></span> Back
+                        </NavLink>                    
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+

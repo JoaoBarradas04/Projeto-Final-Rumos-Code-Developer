@@ -1,0 +1,78 @@
+﻿@page "/recipes/details/{Id}"
+
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@using TesteProgram.Models
+@inject IDbContextFactory<BlazorFinalProject.Data.BlazorFinalProjectContext> DbFactory
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+@code {
+    [Parameter] public string Id { get; set; }
+    private Recipe recipe;
+    private List<Ingredient>? ingredients = new List<Ingredient>();
+    private List<IngredientList>? ingredientLists = new List<IngredientList>();
+    public class IngredientList
+    {
+        public int? ingredientId { get; set; }
+        public string ingredientName { get; set; }
+        public int ingredientQuantity { get; set; }
+        public string ingredientUnit { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        recipe = await Http.GetFromJsonAsync<Recipe>($"http://localhost:5129/api/Recipes/{Id}");
+        ingredients = await Http.GetFromJsonAsync<List<Ingredient>>("http://localhost:5129/api/Ingredients");
+        foreach (var portions in recipe.Portions)
+        {
+            var ingredient = new IngredientList();
+            ingredient.ingredientId = portions.IngredientId;
+            var x = ingredients.FirstOrDefault(y => y.Id == portions.IngredientId);
+            ingredient.ingredientName = x.Name;
+            ingredient.ingredientQuantity = portions.Quantity;
+            ingredient.ingredientUnit = portions.Unit;
+            ingredientLists.Add(ingredient);
+        }
+    }
+
+     private void GoBack()
+    {
+         NavigationManager.NavigateTo("/recipes");
+    }
+}
+
+<h3 class="text-center mt-4">Recipe Details</h3>
+
+@if (recipe != null)
+{
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4>@recipe.Name</h4>
+            </div>
+            <div class="card-body">
+                <p class="h6">Time: <strong>@recipe.Time</strong></p>
+                <p class="h6">Difficulty: <strong>@recipe.Difficulty</strong></p>
+                <p class="h6">Description: <strong>@recipe.Description</strong></p>
+                <p class="h6">Category: <strong>@recipe.Category</strong></p>
+
+                <h5 class="mt-4">Portions:</h5>
+                <ul class="list-group list-group-flush">
+                    @foreach (var portion in ingredientLists)
+                    {
+                        <li class="list-group-item">
+                            @portion.ingredientQuantity @portion.ingredientUnit of @portion.ingredientName
+                        </li>
+                    }
+                </ul>
+            </div>
+            <div class="card-footer text-center">
+                <NavLink class="btn btn-primary" href="recipes" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill" aria-hidden="true"></span> Back
+                </NavLink>
+            </div>
+        </div>
+    </div>
+}
+

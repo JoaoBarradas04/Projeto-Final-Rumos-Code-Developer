@@ -1,0 +1,95 @@
+﻿Edit Component
+@page "/recipes/edit/{id}"
+@using TesteProgram.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+
+<h1>Edit Recipe</h1>
+
+@if (IsLoading)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    <form>
+        <label for="name">Name:</label>
+        <input type="text" id="name" @bind="recipe.Name" class="form-control" />
+
+        <label for="time">Time:</label>
+        <input type="number" id="time" @bind="recipe.Time" class="form-control" />
+
+        <label for="difficulty">Difficulty:</label>
+        <input type="text" id="difficulty" @bind="recipe.Difficulty" class="form-control" />
+
+        <label for="description">Description:</label>
+        <textarea id="description" @bind="recipe.Description" class="form-control"></textarea>
+
+        <label for="category">Category:</label>
+        <input type="text" id="category" @bind="recipe.Category" class="form-control" />
+
+       
+        <button type="button" @onclick="SaveRecipe" class="btn btn-primary">Save</button>
+    </form>
+}
+              
+@code {
+
+
+    [Parameter] public string Id { get; set; }
+    private Recipe recipe = new Recipe();
+    private List<Ingredient> ingredients = new List<Ingredient>();
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsLoading = true;
+        recipe = await Http.GetFromJsonAsync<Recipe>($"http://localhost:5129/api/Recipes/{Id}");
+        ingredients = await Http.GetFromJsonAsync<List<Ingredient>>("http://localhost:5129/api/Ingredients");
+        IsLoading = false;
+    }
+
+    private void AddPortion()
+    {
+        recipe.Portions ??= new List<Portion>();
+        var newPortion = new Portion { Ingredient = new Ingredient(), Unit = "", Quantity = 0 };
+        recipe.Portions.Add(newPortion);
+    }
+
+    private void RemovePortion(Portion portion)
+    {
+        recipe.Portions?.Remove(portion);
+    }
+
+    private bool ValidateRecipe()
+    {
+        // Verifica se os campos obrigatórios estão preenchidos
+        if (string.IsNullOrWhiteSpace(recipe.Name) ||
+            recipe.Time <= 0 ||
+            string.IsNullOrWhiteSpace(recipe.Difficulty) ||
+            string.IsNullOrWhiteSpace(recipe.Description) ||
+            string.IsNullOrWhiteSpace(recipe.Category))
+        {
+            return false;
+        }
+      
+
+        return true;
+    }
+
+    private async Task SaveRecipe()
+    {
+        if (ValidateRecipe())
+        {
+            await Http.PutAsJsonAsync($"http://localhost:5129/api/Recipes/{recipe.Id}", recipe);
+            NavigationManager.NavigateTo("/recipes");
+        }
+        else
+        {
+           
+            Console.WriteLine("Por favor, preencha todos os campos obrigatórios.");
+        }
+    }
+}

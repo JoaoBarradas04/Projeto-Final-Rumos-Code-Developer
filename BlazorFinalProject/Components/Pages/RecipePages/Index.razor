@@ -1,0 +1,110 @@
+﻿@page "/recipes"
+
+@using Microsoft.EntityFrameworkCore
+@using System.Net.Http.Json
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@using TesteProgram.Models
+@using static System.Net.WebRequestMethods
+@inject IDbContextFactory<BlazorFinalProject.Data.BlazorFinalProjectContext> DbFactory
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+@code {
+    List<Recipe>? recipes = new List<Recipe>();    
+
+    protected override async Task OnInitializedAsync()
+    {        
+        recipes = await Http.GetFromJsonAsync<List<Recipe>>("http://localhost:5129/api/Recipes");       
+       
+            
+        
+    }
+
+    private void ViewRecipe(int? id)
+    {
+        NavigationManager.NavigateTo($"/recipes/details/{id}");
+    }
+
+    private void EditRecipe(int? id)
+    {
+        NavigationManager.NavigateTo($"/recipes/edit/{id}");
+    }
+
+
+    private async void DeleteRecipe(Recipe recipe)
+    {
+
+        var response = await Http.DeleteAsync($"http://localhost:5129/api/Recipes/{recipe.Id}");
+        NavigationManager.Refresh(true);
+
+    }
+
+
+}
+
+<PageTitle>Joao's Recipes</PageTitle>
+
+<h1 class="text-center">Recipes</h1>
+
+<div class="container">
+    <div class="row">
+        @foreach (var recipe in recipes)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-info text-white text-center">
+                        <h5 class="card-title">@recipe.Name</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>Time:</strong> @recipe.Time <br />
+                            <strong>Difficulty:</strong> @recipe.Difficulty <br />
+                            <strong>Category:</strong> @recipe.Category
+                        </p>
+                    </div>
+                    <div class="card-footer text-center">
+                        <button class="btn btn-info" @onclick="() => ViewRecipe(recipe.Id)">View</button>
+                        <button class="btn btn-warning" @onclick="() => EditRecipe(recipe.Id)">Edit</button>
+                        <button class="btn btn-danger" @onclick="() => DeleteRecipe(recipe)">Delete</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="text-center mt-4">
+        <NavLink class="nav-link" href="Create" Match="NavLinkMatch.All">
+            <button type="button" class="btn btn-success btn-lg">
+                <span class="bi bi-plus-circle" aria-hidden="true"></span> Create Recipe
+            </button>
+        </NavLink>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .card {
+        border: none;
+        transition: transform 0.2s;
+    }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+        font-weight: bold;
+    }
+</style>
+
+
+
+
